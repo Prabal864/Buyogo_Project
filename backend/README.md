@@ -48,13 +48,18 @@ Copy `.env.example` to `.env` and update the values:
 cp .env.example .env
 ```
 
-Edit `.env` with your database credentials:
+Edit `.env` with your database credentials and a secure JWT secret:
 ```properties
 DB_URL=jdbc:mysql://localhost:3306/ecommerce_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
 DB_USERNAME=root
 DB_PASSWORD=your_password
-JWT_SECRET=your_jwt_secret_key_here
+
+# Generate a secure JWT secret (minimum 64 characters)
+# You can use: openssl rand -base64 64
+JWT_SECRET=your_secure_random_jwt_secret_at_least_64_characters_long
 ```
+
+**Important Security Note:** The JWT secret must be at least 64 characters long and should be a cryptographically random string. Never use predictable values in production.
 
 Or update `src/main/resources/application.properties` directly.
 

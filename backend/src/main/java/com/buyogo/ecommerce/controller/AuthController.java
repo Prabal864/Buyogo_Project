@@ -22,11 +22,13 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
     
-    @Autowired
-    private AuthService authService;
+    private final AuthService authService;
+    private final UserService userService;
     
-    @Autowired
-    private UserService userService;
+    public AuthController(AuthService authService, UserService userService) {
+        this.authService = authService;
+        this.userService = userService;
+    }
     
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {

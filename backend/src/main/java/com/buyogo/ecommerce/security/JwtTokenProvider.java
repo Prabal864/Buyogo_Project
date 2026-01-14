@@ -8,21 +8,32 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
 public class JwtTokenProvider {
     
-    @Value("${jwt.secret:mySecretKeyForJWTTokenGenerationThatShouldBeVeryLongAndSecure123456789}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
     
     @Value("${jwt.expiration:86400000}")
     private long jwtExpirationMs;
     
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        if (!StringUtils.hasText(jwtSecret)) {
+            throw new IllegalStateException("JWT secret is not configured. Please set JWT_SECRET environment variable.");
+        }
+        
+        // Ensure the key is at least 256 bits for HS512
+        if (jwtSecret.length() < 64) {
+            throw new IllegalStateException("JWT secret must be at least 64 characters long for HS512 algorithm.");
+        }
+        
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
     
     public String generateToken(Authentication authentication) {

@@ -16,14 +16,17 @@ import java.util.Map;
 @Service
 public class AdminService {
     
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
     
-    @Autowired
-    private ProductRepository productRepository;
-    
-    @Autowired
-    private OrderRepository orderRepository;
+    public AdminService(UserRepository userRepository,
+                       ProductRepository productRepository,
+                       OrderRepository orderRepository) {
+        this.userRepository = userRepository;
+        this.productRepository = productRepository;
+        this.orderRepository = orderRepository;
+    }
     
     public Map<String, Object> getAnalytics() {
         Map<String, Object> analytics = new HashMap<>();
@@ -31,7 +34,7 @@ public class AdminService {
         long totalUsers = userRepository.count();
         long totalProducts = productRepository.count();
         long totalOrders = orderRepository.countAllOrders();
-        BigDecimal totalRevenue = orderRepository.getTotalRevenue();
+        BigDecimal totalRevenue = orderRepository.getTotalRevenue(Order.Status.COMPLETED);
         
         analytics.put("totalUsers", totalUsers);
         analytics.put("totalProducts", totalProducts);

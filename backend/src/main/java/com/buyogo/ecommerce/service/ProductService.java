@@ -12,8 +12,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class ProductService {
     
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
+    
+    public ProductService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
     
     public Page<Product> getAllProducts(Pageable pageable) {
         return productRepository.findAll(pageable);

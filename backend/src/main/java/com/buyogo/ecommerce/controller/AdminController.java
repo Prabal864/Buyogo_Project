@@ -18,8 +18,11 @@ import java.util.Map;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
     
-    @Autowired
-    private AdminService adminService;
+    private final AdminService adminService;
+    
+    public AdminController(AdminService adminService) {
+        this.adminService = adminService;
+    }
     
     @GetMapping("/analytics")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAnalytics() {
