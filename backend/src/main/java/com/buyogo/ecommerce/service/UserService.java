@@ -3,7 +3,6 @@ package com.buyogo.ecommerce.service;
 import com.buyogo.ecommerce.entity.User;
 import com.buyogo.ecommerce.exception.ResourceNotFoundException;
 import com.buyogo.ecommerce.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service

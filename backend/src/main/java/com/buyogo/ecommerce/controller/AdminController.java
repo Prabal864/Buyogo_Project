@@ -3,7 +3,6 @@ package com.buyogo.ecommerce.controller;
 import com.buyogo.ecommerce.dto.ApiResponse;
 import com.buyogo.ecommerce.entity.User;
 import com.buyogo.ecommerce.service.AdminService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

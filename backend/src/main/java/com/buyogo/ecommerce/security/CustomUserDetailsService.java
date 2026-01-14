@@ -2,7 +2,6 @@ package com.buyogo.ecommerce.security;
 
 import com.buyogo.ecommerce.entity.User;
 import com.buyogo.ecommerce.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

@@ -6,7 +6,6 @@ import com.buyogo.ecommerce.dto.RegisterRequest;
 import com.buyogo.ecommerce.entity.User;
 import com.buyogo.ecommerce.repository.UserRepository;
 import com.buyogo.ecommerce.security.JwtTokenProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;

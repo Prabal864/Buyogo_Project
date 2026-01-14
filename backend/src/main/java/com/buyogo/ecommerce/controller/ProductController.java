@@ -5,7 +5,6 @@ import com.buyogo.ecommerce.dto.ProductRequest;
 import com.buyogo.ecommerce.entity.Product;
 import com.buyogo.ecommerce.service.ProductService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
