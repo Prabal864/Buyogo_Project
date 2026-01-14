@@ -1,46 +1,5 @@
 # Factory Events Processing System
 
-A Spring Boot 3.x application for processing and managing factory machine events with PostgreSQL database.
-
-## Prerequisites
-
-- Java 17 or higher
-- Maven 3.6+
-- Docker and Docker Compose (for local PostgreSQL)
-
-## Technology Stack
-
-- **Framework**: Spring Boot 3.2.0
-- **Java Version**: 17
-- **Database**: PostgreSQL 15
-- **Build Tool**: Maven
-- **Key Dependencies**:
-  - Spring Web
-  - Spring Data JPA
-  - Spring Validation
-  - Lombok
-  - PostgreSQL Driver
-  - HikariCP (Connection Pooling)
-
-## Project Structure
-
-```
-factory-events/
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/buyogo/factoryevents/
-│   │   │       └── FactoryEventsApplication.java
-│   │   └── resources/
-│   │       ├── application.properties
-│   │       └── schema.sql
-│   └── test/
-│       └── java/
-│           └── com/buyogo/factoryevents/
-├── docker-compose.yml
-├── pom.xml
-└── # Factory Events Processing System
-
 A high-performance, production-ready Spring Boot application for ingesting, processing, and analyzing factory machine events with intelligent deduplication and update logic.
 
 ## 📋 Overview
