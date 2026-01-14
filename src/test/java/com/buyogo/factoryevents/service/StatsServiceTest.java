@@ -386,7 +386,7 @@ class StatsServiceTest {
         Instant to = baseTime.plus(Duration.ofHours(24));
         int limit = 1;
         
-        // 50 defects / 3 events = 16.666...% should round to 16.67%
+        // 50 defects / 3 events * 100 = 1666.67 defects per 100 events
         List<Object[]> mockResults = new ArrayList<>();
         mockResults.add(new Object[]{"line-1", 50L, 3L});
         
