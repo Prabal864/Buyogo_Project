@@ -13,6 +13,12 @@ This system handles batch ingestion of factory machine events from IoT sensors, 
 
 Built for manufacturing environments where machines generate continuous telemetry data that needs to be processed, deduplicated, and analyzed efficiently.
 
+## 📚 Documentation
+
+- **[API Testing Guide](API_TESTING_GUIDE.md)** - Comprehensive guide for testing all endpoints
+- **[Performance Optimization Summary](PERFORMANCE_OPTIMIZATION_SUMMARY.md)** - Details on recent optimizations
+- **[Benchmark Results](BENCHMARK.md)** - Performance metrics and benchmarks
+
 ---
 
 ## 🛠 Tech Stack

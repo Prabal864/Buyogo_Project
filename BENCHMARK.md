@@ -8,15 +8,15 @@ Factory Events Processing System - Performance Test Results
 
 ### Hardware Specifications
 
-**Platform**: GitHub Actions Runner (Ubuntu)
+**Platform**
 
-| Component | Specification |
-|-----------|--------------|
-| **CPU** | 2-core Intel Xeon (x86_64) |
-| **RAM** | 7 GB DDR4 |
-| **Storage** | SSD (GitHub-hosted) |
-| **OS** | Ubuntu 22.04 LTS (Linux) |
-| **Java** | OpenJDK 17.0.x |
+| Component | Specification                    |
+|-----------|----------------------------------|
+| **CPU** | 12-core Intel i5 13500H (x86_64) |
+| **RAM** | 16 GB DDR4                       |
+| **Storage** | SSD                              |
+| **OS** | Windows 11 Home                  |
+                 |
 
 ### Software Stack
 
