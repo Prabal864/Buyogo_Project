@@ -5,6 +5,7 @@ import com.buyogo.factoryevents.entity.Event;
 import com.buyogo.factoryevents.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,9 +34,9 @@ public class EventService {
         int updated = 0;
         int rejected = 0;
         List<RejectionDetail> rejections = new ArrayList<>();
-        
+
         Instant now = Instant.now();
-        
+
         // First pass: validate and collect valid event IDs
         List<EventRequest> validEvents = new ArrayList<>();
         List<String> eventIds = new ArrayList<>();
@@ -64,6 +65,7 @@ public class EventService {
         // Prepare lists for batch operations
         List<Event> eventsToSave = new ArrayList<>();
         List<Event> eventsToUpdate = new ArrayList<>();
+        List<String> newEventIds = new ArrayList<>();
 
         // Process valid events
         for (EventRequest request : validEvents) {
@@ -94,6 +96,7 @@ public class EventService {
                     // New event
                     Event newEvent = createEvent(request, now, payloadHash);
                     eventsToSave.add(newEvent);
+                    newEventIds.add(request.getEventId());
                     accepted++;
                     log.debug("Accepted new event: {}", request.getEventId());
                 }
@@ -109,7 +112,24 @@ public class EventService {
         
         // Batch save new events
         if (!eventsToSave.isEmpty()) {
-            eventRepository.saveAll(eventsToSave);
+            try {
+                eventRepository.saveAll(eventsToSave);
+            } catch (DataIntegrityViolationException ex) {
+                // Concurrent insert race: another transaction inserted the same event_id(s).
+                // Treat these as deduped and proceed.
+                log.debug("Concurrent insert conflict during batch save; treating as deduped", ex);
+
+                // Re-fetch by IDs to confirm what exists now.
+                List<Event> nowExisting = eventRepository.findAllById(newEventIds);
+                int actuallyInserted = nowExisting.size();
+
+                // We already counted all new events as accepted. Adjust counters:
+                // accepted = number actually inserted by this transaction (best effort)
+                // deduped += acceptedPreviously - actuallyInserted
+                int conflicted = Math.max(0, accepted - actuallyInserted);
+                deduped += conflicted;
+                accepted = actuallyInserted;
+            }
         }
 
         // Batch save updated events
@@ -118,12 +138,12 @@ public class EventService {
         }
 
         return BatchIngestionResponse.builder()
-            .accepted(accepted)
-            .deduped(deduped)
-            .updated(updated)
-            .rejected(rejected)
-            .rejections(rejections)
-            .build();
+                .accepted(accepted)
+                .deduped(deduped)
+                .updated(updated)
+                .rejected(rejected)
+                .rejections(rejections)
+                .build();
     }
     
     private String validateEvent(EventRequest request, Instant now) {
