@@ -815,43 +815,6 @@ Based on the optimizations:
 
 ---
 
-## Testing Checklist
-
-### Functional Tests
-- [ ] Ingest single valid event
-- [ ] Ingest batch of valid events
-- [ ] Test duplicate event handling (deduplication)
-- [ ] Test event update (different payload, same eventId)
-- [ ] Test validation errors (negative duration)
-- [ ] Test validation errors (future time)
-- [ ] Test validation errors (missing required fields)
-- [ ] Test empty batch
-- [ ] Test batch with mixed valid/invalid events
-- [ ] Get machine statistics with data
-- [ ] Get machine statistics with no data
-- [ ] Get top defect lines with data
-- [ ] Get top defect lines with no data
-- [ ] Test time range filtering
-
-### Performance Tests
-- [ ] Ingest 1000 events (< 1 second)
-- [ ] Ingest 2000 events (< 2 seconds)
-- [ ] Test concurrent requests (10 simultaneous)
-- [ ] Test deduplication performance
-- [ ] Test update performance
-
-### Edge Cases
-- [ ] Event time exactly 15 minutes in future
-- [ ] Duration = 0
-- [ ] Duration = 21600000 (max)
-- [ ] defectCount = -1
-- [ ] defectCount = 0
-- [ ] Large batch (10000+ events)
-- [ ] Empty string fields
-- [ ] Null values
-
----
-
 ## Troubleshooting
 
 ### Common Issues
