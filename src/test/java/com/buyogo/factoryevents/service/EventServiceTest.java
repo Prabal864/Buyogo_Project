@@ -18,11 +18,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,7 +58,7 @@ class EventServiceTest {
         // Create existing event with same payload
         Event existingEvent = createEventFromRequest(request, baseTime);
         
-        when(eventRepository.findByEventId("event-001")).thenReturn(Optional.of(existingEvent));
+        when(eventRepository.findAllById(List.of("event-001"))).thenReturn(List.of(existingEvent));
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(List.of(request));
@@ -70,8 +69,8 @@ class EventServiceTest {
         assertThat(response.getUpdated()).isEqualTo(0);
         assertThat(response.getRejected()).isEqualTo(0);
         
-        verify(eventRepository, times(1)).findByEventId("event-001");
-        verify(eventRepository, never()).save(any(Event.class));
+        verify(eventRepository, times(1)).findAllById(List.of("event-001"));
+        verify(eventRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -93,8 +92,8 @@ class EventServiceTest {
                 .payloadHash("different-hash")
                 .build();
         
-        when(eventRepository.findByEventId("event-002")).thenReturn(Optional.of(existingEvent));
-        when(eventRepository.save(any(Event.class))).thenReturn(existingEvent);
+        when(eventRepository.findAllById(List.of("event-002"))).thenReturn(List.of(existingEvent));
+        when(eventRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(List.of(newRequest));
@@ -105,14 +104,13 @@ class EventServiceTest {
         assertThat(response.getUpdated()).isEqualTo(1);
         assertThat(response.getRejected()).isEqualTo(0);
         
-        verify(eventRepository, times(1)).findByEventId("event-002");
-        verify(eventRepository, times(1)).save(any(Event.class));
-        
-        // Verify the event was updated with new values
-        verify(eventRepository).save(argThat(event -> 
-            event.getDurationMs().equals(2000L) && 
-            event.getDefectCount().equals(10)
-        ));
+        verify(eventRepository, times(1)).findAllById(List.of("event-002"));
+        verify(eventRepository, times(1)).saveAll(argThat(events -> {
+            List<Event> eventList = (List<Event>) events;
+            return eventList.size() == 1 &&
+                   eventList.get(0).getDurationMs().equals(2000L) &&
+                   eventList.get(0).getDefectCount().equals(10);
+        }));
     }
 
     @Test
@@ -134,7 +132,7 @@ class EventServiceTest {
                 .payloadHash("different-hash")
                 .build();
         
-        when(eventRepository.findByEventId("event-003")).thenReturn(Optional.of(existingEvent));
+        when(eventRepository.findAllById(List.of("event-003"))).thenReturn(List.of(existingEvent));
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(List.of(oldRequest));
@@ -145,8 +143,8 @@ class EventServiceTest {
         assertThat(response.getUpdated()).isEqualTo(0);
         assertThat(response.getRejected()).isEqualTo(0);
         
-        verify(eventRepository, times(1)).findByEventId("event-003");
-        verify(eventRepository, never()).save(any(Event.class));
+        verify(eventRepository, times(1)).findAllById(List.of("event-003"));
+        verify(eventRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -156,7 +154,7 @@ class EventServiceTest {
         // Arrange
         EventRequest request = createValidEventRequest("event-004", baseTime, "machine-1", -100L, 5);
         
-        when(eventRepository.findByEventId(anyString())).thenReturn(Optional.empty());
+        when(eventRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(List.of(request));
@@ -172,7 +170,7 @@ class EventServiceTest {
         assertThat(rejection.getEventId()).isEqualTo("event-004");
         assertThat(rejection.getReason()).isEqualTo("INVALID_DURATION");
         
-        verify(eventRepository, never()).save(any(Event.class));
+        verify(eventRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -183,7 +181,7 @@ class EventServiceTest {
         long invalidDuration = MAX_DURATION_MS + 1; // Just over 6 hours
         EventRequest request = createValidEventRequest("event-005", baseTime, "machine-1", invalidDuration, 5);
         
-        when(eventRepository.findByEventId(anyString())).thenReturn(Optional.empty());
+        when(eventRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(List.of(request));
@@ -197,7 +195,7 @@ class EventServiceTest {
         assertThat(rejection.getEventId()).isEqualTo("event-005");
         assertThat(rejection.getReason()).isEqualTo("INVALID_DURATION");
         
-        verify(eventRepository, never()).save(any(Event.class));
+        verify(eventRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -208,7 +206,7 @@ class EventServiceTest {
         Instant futureTime = baseTime.plus(Duration.ofMinutes(20));
         EventRequest request = createValidEventRequest("event-006", futureTime, "machine-1", 1000L, 5);
         
-        when(eventRepository.findByEventId(anyString())).thenReturn(Optional.empty());
+        when(eventRepository.findAllById(anyList())).thenReturn(List.of());
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(List.of(request));
@@ -222,7 +220,7 @@ class EventServiceTest {
         assertThat(rejection.getEventId()).isEqualTo("event-006");
         assertThat(rejection.getReason()).isEqualTo("FUTURE_EVENT_TIME");
         
-        verify(eventRepository, never()).save(any(Event.class));
+        verify(eventRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -232,8 +230,8 @@ class EventServiceTest {
         // Arrange
         EventRequest request = createValidEventRequest("event-007", baseTime, "machine-1", 1000L, -1);
         
-        when(eventRepository.findByEventId(anyString())).thenReturn(Optional.empty());
-        when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventRepository.findAllById(List.of("event-007"))).thenReturn(List.of());
+        when(eventRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(List.of(request));
@@ -244,10 +242,12 @@ class EventServiceTest {
         assertThat(response.getUpdated()).isEqualTo(0);
         assertThat(response.getRejected()).isEqualTo(0);
         
-        verify(eventRepository, times(1)).save(argThat(event -> 
-            event.getEventId().equals("event-007") && 
-            event.getDefectCount().equals(-1)
-        ));
+        verify(eventRepository, times(1)).saveAll(argThat(events -> {
+            List<Event> eventList = (List<Event>) events;
+            return eventList.size() == 1 &&
+                   eventList.get(0).getEventId().equals("event-007") &&
+                   eventList.get(0).getDefectCount().equals(-1);
+        }));
     }
 
     @Test
@@ -257,8 +257,8 @@ class EventServiceTest {
         // Arrange
         EventRequest request = createValidEventRequest("event-008", baseTime, "machine-1", 1000L, 5);
         
-        when(eventRepository.findByEventId(anyString())).thenReturn(Optional.empty());
-        when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventRepository.findAllById(List.of("event-008"))).thenReturn(List.of());
+        when(eventRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(List.of(request));
@@ -270,7 +270,7 @@ class EventServiceTest {
         assertThat(response.getRejected()).isEqualTo(0);
         assertThat(response.getRejections()).isEmpty();
         
-        verify(eventRepository, times(1)).save(any(Event.class));
+        verify(eventRepository, times(1)).saveAll(anyList());
     }
 
     @Test
@@ -285,8 +285,8 @@ class EventServiceTest {
             createValidEventRequest("event-104", baseTime, "machine-1", 2000L, 10)           // New - should accept
         );
         
-        when(eventRepository.findByEventId(anyString())).thenReturn(Optional.empty());
-        when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventRepository.findAllById(anyList())).thenReturn(List.of());
+        when(eventRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(requests);
@@ -296,7 +296,10 @@ class EventServiceTest {
         assertThat(response.getRejected()).isEqualTo(2);
         assertThat(response.getRejections()).hasSize(2);
         
-        verify(eventRepository, times(2)).save(any(Event.class));
+        verify(eventRepository, times(1)).saveAll(argThat(events -> {
+            List<Event> eventList = (List<Event>) events;
+            return eventList.size() == 2;
+        }));
     }
 
     @Test
@@ -345,7 +348,7 @@ class EventServiceTest {
         assertThat(response.getRejected()).isEqualTo(5);
         assertThat(response.getRejections()).hasSize(5);
         
-        verify(eventRepository, never()).save(any(Event.class));
+        verify(eventRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -356,8 +359,8 @@ class EventServiceTest {
         EventRequest zeroDuration = createValidEventRequest("event-301", baseTime, "machine-1", 0L, 5);
         EventRequest maxValidDuration = createValidEventRequest("event-302", baseTime, "machine-1", MAX_DURATION_MS, 5);
         
-        when(eventRepository.findByEventId(anyString())).thenReturn(Optional.empty());
-        when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventRepository.findAllById(Arrays.asList("event-301", "event-302"))).thenReturn(List.of());
+        when(eventRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(Arrays.asList(zeroDuration, maxValidDuration));
@@ -366,7 +369,10 @@ class EventServiceTest {
         assertThat(response.getAccepted()).isEqualTo(2);
         assertThat(response.getRejected()).isEqualTo(0);
         
-        verify(eventRepository, times(2)).save(any(Event.class));
+        verify(eventRepository, times(1)).saveAll(argThat(events -> {
+            List<Event> eventList = (List<Event>) events;
+            return eventList.size() == 2;
+        }));
     }
 
     @Test
@@ -377,8 +383,8 @@ class EventServiceTest {
         Instant exactly15Min = baseTime.plus(Duration.ofMinutes(15));
         EventRequest request = createValidEventRequest("event-401", exactly15Min, "machine-1", 1000L, 5);
         
-        when(eventRepository.findByEventId(anyString())).thenReturn(Optional.empty());
-        when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventRepository.findAllById(List.of("event-401"))).thenReturn(List.of());
+        when(eventRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         BatchIngestionResponse response = eventService.processBatch(List.of(request));
@@ -387,7 +393,7 @@ class EventServiceTest {
         assertThat(response.getAccepted()).isEqualTo(1);
         assertThat(response.getRejected()).isEqualTo(0);
         
-        verify(eventRepository, times(1)).save(any(Event.class));
+        verify(eventRepository, times(1)).saveAll(anyList());
     }
 
     // Helper methods

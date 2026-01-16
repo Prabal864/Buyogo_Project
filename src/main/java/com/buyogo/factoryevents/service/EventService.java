@@ -15,7 +15,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,41 +36,52 @@ public class EventService {
         
         Instant now = Instant.now();
         
+        // First pass: validate and collect valid event IDs
+        List<EventRequest> validEvents = new ArrayList<>();
+        List<String> eventIds = new ArrayList<>();
+
         for (EventRequest request : events) {
+            String validationError = validateEvent(request, now);
+            if (validationError != null) {
+                rejected++;
+                rejections.add(RejectionDetail.builder()
+                    .eventId(request.getEventId())
+                    .reason(validationError)
+                    .build());
+            } else {
+                validEvents.add(request);
+                eventIds.add(request.getEventId());
+            }
+        }
+
+        // Bulk fetch all existing events in a single query
+        List<Event> existingEvents = eventRepository.findAllById(eventIds);
+        java.util.Map<String, Event> existingEventMap = new java.util.HashMap<>();
+        for (Event event : existingEvents) {
+            existingEventMap.put(event.getEventId(), event);
+        }
+
+        // Prepare lists for batch operations
+        List<Event> eventsToSave = new ArrayList<>();
+        List<Event> eventsToUpdate = new ArrayList<>();
+
+        // Process valid events
+        for (EventRequest request : validEvents) {
             try {
-                // Validate event
-                String validationError = validateEvent(request, now);
-                if (validationError != null) {
-                    rejected++;
-                    rejections.add(RejectionDetail.builder()
-                        .eventId(request.getEventId())
-                        .reason(validationError)
-                        .build());
-                    continue;
-                }
-                
-                // Set receivedTime (ignore any from request)
-                Instant receivedTime = now;
-                
-                // Calculate payload hash
                 String payloadHash = calculatePayloadHash(request);
-                
-                // Check for existing event
-                Optional<Event> existingEvent = eventRepository.findByEventId(request.getEventId());
-                
-                if (existingEvent.isPresent()) {
-                    Event existing = existingEvent.get();
-                    
+                Event existing = existingEventMap.get(request.getEventId());
+
+                if (existing != null) {
                     // Check if payload is identical (dedupe case)
                     if (existing.getPayloadHash().equals(payloadHash)) {
                         deduped++;
                         log.debug("Deduped event: {}", request.getEventId());
                     } else {
                         // Different payload - check receivedTime for update logic
-                        if (receivedTime.isAfter(existing.getReceivedTime())) {
+                        if (now.isAfter(existing.getReceivedTime())) {
                             // Update with new data
-                            updateEvent(existing, request, receivedTime, payloadHash);
-                            eventRepository.save(existing);
+                            updateEvent(existing, request, now, payloadHash);
+                            eventsToUpdate.add(existing);
                             updated++;
                             log.debug("Updated event: {}", request.getEventId());
                         } else {
@@ -82,12 +92,11 @@ public class EventService {
                     }
                 } else {
                     // New event
-                    Event newEvent = createEvent(request, receivedTime, payloadHash);
-                    eventRepository.save(newEvent);
+                    Event newEvent = createEvent(request, now, payloadHash);
+                    eventsToSave.add(newEvent);
                     accepted++;
                     log.debug("Accepted new event: {}", request.getEventId());
                 }
-                
             } catch (Exception e) {
                 rejected++;
                 rejections.add(RejectionDetail.builder()
@@ -98,6 +107,16 @@ public class EventService {
             }
         }
         
+        // Batch save new events
+        if (!eventsToSave.isEmpty()) {
+            eventRepository.saveAll(eventsToSave);
+        }
+
+        // Batch save updated events
+        if (!eventsToUpdate.isEmpty()) {
+            eventRepository.saveAll(eventsToUpdate);
+        }
+
         return BatchIngestionResponse.builder()
             .accepted(accepted)
             .deduped(deduped)
