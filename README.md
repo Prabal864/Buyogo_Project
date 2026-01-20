@@ -1,3 +1,21 @@
+# 🚀 Quick Start (Run & Test Locally)
+
+## 1. Clone the repository
+```bash
+git clone https://github.com/Prabal864/Buyogo_Project.git
+cd Buyogo_Project
+```
+## 2. Run tests
+```bash
+mvn test 
+```
+
+## 3. Run the application
+```bash 
+mvn spring-boot:run
+```
+
+
 # Factory Events Processing System
 
 A high-performance, production-ready Spring Boot application for ingesting, processing, and analyzing factory machine events with intelligent deduplication and update logic.
